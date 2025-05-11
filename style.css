@@ -1,32 +1,3 @@
-.header-content {
-display: flex;
-justify-content: space-between;
-align-items: center;
-max-width: 1200px;
-margin: 0 auto;
-}
-
-.header-text {
-text-align: left;
-}
-
-.header-text h1 {
-font-size: 3rem;
-color: #343a40; /* Couleur sombre élégante */
-margin-bottom: 0.5rem;
-}
-
-.header-text h4 {
-color: #6c757d; /* Gris neutre */
-font-weight: 400;
-}
-
-.header-image img {
-    object-fit: cover;
-    border-radius: 10%;
-    transition: transform 0.3s ease;
-}
-
 main {
     min-height: 500px;
 }

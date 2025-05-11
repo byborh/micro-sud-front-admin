@@ -30,17 +30,29 @@
         </div>
     </nav>
 
-    <header>
-    <div class="header-content">
-        <div class="header-text">
-        <h1>Micro-Sud Dashboard</h1>
-        <h4>Le Dashboard de Micro-Sud</h4>
+    <header class="bg-light py-4">
+        <div class="container d-flex justify-content-between align-items-center">
+          
+          <!-- Texte -->
+          <div>
+            <h1 class="display-4 text-dark mb-1">Micro-Sud Dashboard</h1>
+            <h4 class="text-secondary fw-normal">Le Dashboard de Micro-Sud</h4>
+          </div>
+      
+          <!-- Image -->
+          <div>
+            <img 
+              src="img/micro-sud-logo.avif" 
+              alt="Photo de Micro Sud" 
+              class="img-fluid rounded-3" 
+              style="object-fit: cover; transition: transform 0.3s ease;"
+              onmouseover="this.style.transform='scale(1.05)'" 
+              onmouseout="this.style.transform='scale(1)'"
+            >
+          </div>
+      
         </div>
-        <div class="header-image">
-        <img src="img/micro-sud-logo.avif" alt="Photo de Micro Sud">
-        </div>
-    </div>
-    </header>
+    </header>  
 
     <main class="container mt-5">
         <div class="row justify-content-center">
