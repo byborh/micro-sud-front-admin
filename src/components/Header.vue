@@ -14,7 +14,7 @@ import { RouterLink } from 'vue-router'
             <router-link class="nav-link" to="/">Block Textuel</router-link>
             <router-link class="nav-link" to="/machines">Machines</router-link>
             <router-link class="nav-link" to="/blog">Blog</router-link>
-            <router-link class="nav-link" to="/savoir_faire">Savoir-faire</router-link>
+            <router-link class="nav-link" to="/savoir-faire">Savoir-faire</router-link>
 
             <!-- <li class="nav-item"><a class="nav-link active" href="index.html">Accueil</a></li>
             <li class="nav-item"><a class="nav-link" href="machine.html">Machines</a></li>
