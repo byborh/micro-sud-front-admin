@@ -1,4 +1,120 @@
-<script setup></script>
+<script setup>
+import { ref, onMounted } from 'vue'
+
+const API_URL = import.meta.env.VITE_API_URL
+
+// Données pour le nouveau savoir-faire
+const newSkill = ref({
+  title: '',
+  content: '',
+  img: null
+})
+
+// Liste des savoir-faire existants
+const skills = ref([])
+
+// Chargement des savoir-faire au montage du composant
+onMounted(async () => {
+  await fetchSkills()
+})
+
+async function fetchSkills() {
+  try {
+    const response = await fetch(`${API_URL}/type/section`)
+    if (response.ok) {
+      skills.value = await response.json()
+    }
+  } catch (error) {
+    console.error('Erreur lors du chargement des savoir-faire:', error)
+  }
+}
+
+function handleNewImageUpload(event) {
+  newSkill.value.img = event.target.files[0]
+}
+
+function handleImageUpload(skill, event) {
+  skill.img = event.target.files[0]
+}
+
+async function handleNewSubmit(event) {
+  event.preventDefault()
+  
+  const jsonData = {
+    type: 'section',
+    title: newSkill.value.title,
+    content: newSkill.value.content,
+    img: newSkill.value.img?.name || 'img'
+  }
+
+  try {
+    const response = await fetch(`${API_URL}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(jsonData),
+    })
+    
+    if (response.ok) {
+      alert('Savoir-faire ajouté avec succès')
+      newSkill.value = {
+        title: '',
+        content: '',
+        img: null
+      }
+      await fetchSkills()
+    }
+  } catch (error) {
+    console.error('Erreur:', error)
+  }
+}
+
+async function handleSubmit(skill, event) {
+  event.preventDefault()
+  
+  const jsonData = {
+    type: 'section',
+    title: skill.title,
+    content: skill.content,
+    img: skill.img || 'img'
+  }
+
+  try {
+    const response = await fetch(`${API_URL}/${skill.id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(jsonData),
+    })
+    
+    if (response.ok) {
+      alert('Savoir-faire modifié avec succès')
+      await fetchSkills()
+    }
+  } catch (error) {
+    console.error('Erreur:', error)
+  }
+}
+
+async function handleDelete(skillId) {
+  if (confirm('Êtes-vous sûr de vouloir supprimer ce savoir-faire ?')) {
+    try {
+      const response = await fetch(`${API_URL}/${skillId}`, {
+        method: 'DELETE',
+      })
+      
+      if (response.ok) {
+        alert('Savoir-faire supprimé avec succès')
+        await fetchSkills()
+      }
+    } catch (error) {
+      console.error('Erreur:', error)
+    }
+  }
+}
+</script>
 
 <template>
   <main class="container mt-5">
@@ -7,19 +123,36 @@
         <!-- Formulaire de création -->
         <section class="card mb-5 shadow-sm p-4">
           <h4 class="mb-4"><i class="bi bi-tools me-2"></i>Ajouter un savoir-faire</h4>
-          <form enctype="multipart/form-data">
+          <form @submit="handleNewSubmit" enctype="multipart/form-data">
             <div class="row g-3">
               <div class="col-md-6">
                 <label class="form-label">Titre</label>
-                <input type="text" class="form-control" placeholder="Ex : Matériaux usinés">
+                <input 
+                  type="text" 
+                  class="form-control" 
+                  placeholder="Ex : Matériaux usinés"
+                  v-model="newSkill.title"
+                  required
+                >
               </div>
               <div class="col-md-6">
                 <label class="form-label">Image</label>
-                <input type="file" class="form-control" accept="image/*">
+                <input 
+                  type="file" 
+                  class="form-control" 
+                  accept="image/*"
+                  @change="handleNewImageUpload"
+                >
               </div>
               <div class="col-md-12">
                 <label class="form-label">Contenu (liste)</label>
-                <textarea class="form-control" rows="4" placeholder="Entrez chaque élément sur une ligne séparée..."></textarea>
+                <textarea 
+                  class="form-control" 
+                  rows="4" 
+                  placeholder="Entrez chaque élément sur une ligne séparée..."
+                  v-model="newSkill.content"
+                  required
+                ></textarea>
               </div>
               <div class="col-12 text-end">
                 <button type="submit" class="btn btn-primary">
@@ -34,48 +167,72 @@
         <section>
           <h4 class="mb-4"><i class="bi bi-card-checklist me-2"></i>Savoir-faire existants</h4>
 
-          <!-- Exemple d'un savoir-faire -->
-          <form class="card mb-4 shadow-sm p-3" enctype="multipart/form-data">
-            <div class="row align-items-center">
-              <!-- Image -->
-              <div class="col-md-3 text-center">
-                <label for="savoirImage1" class="d-block cursor-pointer">
-                  <img src="https://via.placeholder.com/150" alt="Savoir-faire" class="img-fluid rounded border" style="cursor: pointer;">
-                </label>
-                <input type="file" class="form-control d-none" id="savoirImage1" accept="image/*">
-              </div>
-
-              <!-- Infos -->
-              <div class="col-md-6">
-                <div class="mb-2">
-                  <label class="form-label">Titre</label>
-                  <input type="text" class="form-control" value="Matériaux usinés">
+          <!-- Boucle sur les savoir-faire -->
+          <div v-for="skill in skills" :key="skill.id" class="card mb-4 shadow-sm p-3">
+            <form @submit.prevent="handleSubmit(skill, $event)" enctype="multipart/form-data">
+              <div class="row align-items-center">
+                <!-- Image -->
+                <div class="col-md-3 text-center">
+                  <label :for="'skillImage' + skill.id" class="d-block cursor-pointer">
+                    <img 
+                      :src="skill.img || 'https://via.placeholder.com/150'" 
+                      alt="Savoir-faire" 
+                      class="img-fluid rounded border" 
+                      style="cursor: pointer;"
+                    >
+                  </label>
+                  <input 
+                    type="file" 
+                    class="form-control d-none" 
+                    :id="'skillImage' + skill.id" 
+                    accept="image/*"
+                    @change="handleImageUpload(skill, $event)"
+                  >
                 </div>
-                <div class="mb-2">
-                  <label class="form-label">Contenu (liste)</label>
-                  <textarea class="form-control" rows="4">Acier
-  Inox
-  Aluminium
-  Alliage de cuivre
-  Titane
-  Plastique
-  Plastique chargé
-  Inconel
-  Densimet</textarea>
+
+                <!-- Infos -->
+                <div class="col-md-6">
+                  <div class="mb-2">
+                    <label class="form-label">Titre</label>
+                    <input 
+                      type="text" 
+                      class="form-control" 
+                      v-model="skill.title"
+                      required
+                    >
+                  </div>
+                  <div class="mb-2">
+                    <label class="form-label">Contenu (liste)</label>
+                    <textarea 
+                      class="form-control" 
+                      rows="4"
+                      v-model="skill.content"
+                      required
+                    ></textarea>
+                  </div>
+                </div>
+
+                <!-- Actions -->
+                <div class="col-md-3 text-end">
+                  <button type="submit" class="btn btn-success mb-2 w-100 d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-pencil-square"></i> Modifier
+                  </button>
+                  <button 
+                    type="button" 
+                    class="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2"
+                    @click="handleDelete(skill.id)"
+                  >
+                    <i class="bi bi-trash3"></i> Supprimer
+                  </button>
                 </div>
               </div>
+            </form>
+          </div>
 
-              <!-- Actions -->
-              <div class="col-md-3 text-end">
-                <button type="submit" class="btn btn-success mb-2 w-100 d-flex align-items-center justify-content-center gap-2">
-                  <i class="bi bi-pencil-square"></i> Modifier
-                </button>
-                <button type="button" class="btn btn-danger w-100 d-flex align-items-center justify-content-center gap-2">
-                  <i class="bi bi-trash3"></i> Supprimer
-                </button>
-              </div>
-            </div>
-          </form>
+          <!-- Message si aucun savoir-faire -->
+          <div v-if="skills.length === 0" class="alert alert-info">
+            Aucun savoir-faire disponible. Ajoutez-en un avec le formulaire ci-dessus.
+          </div>
         </section>
       </div>
     </div>
@@ -83,6 +240,3 @@
 </template>
 
 <style scoped></style>
-
-
-
