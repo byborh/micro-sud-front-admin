@@ -30,76 +30,91 @@ async function fetchMachines() {
 }
 
 function handleNewImageUpload(event) {
-  newMachine.value.img = event.target.files[0]
+  const file = event.target.files[0];
+  if (file) {
+    newMachine.value.img = file;
+    // Mise à jour immédiate de l'aperçu
+    newMachine.value.imgPreview = URL.createObjectURL(file);
+  }
 }
 
 function handleImageUpload(machine, event) {
-  machine.img = event.target.files[0]
+  const file = event.target.files[0];
+  if (file) {
+    machine.img = file;
+    // Mise à jour immédiate de l'aperçu
+    machine.imgPreview = URL.createObjectURL(file);
+  }
 }
 
 async function handleNewSubmit(event) {
   event.preventDefault()
   
-  const jsonData = {
-    type: 'machine',
-    title: newMachine.value.title,
-    content: newMachine.value.content,
-    img: newMachine.value.img?.name || 'img'
+  const formData = new FormData()
+  formData.append('type', 'machine')
+  formData.append('title', newMachine.value.title)
+  formData.append('content', newMachine.value.content)
+  if (newMachine.value.img) {
+    formData.append('img', newMachine.value.img)
   }
 
   try {
     const response = await fetch(`${API_URL}`, {
       method: 'POST',
+      body: formData,
       headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(jsonData),
+        'Accept': 'application/json' // Important pour la réponse
+      }
     })
+    
+    const data = await response.json()
     
     if (response.ok) {
       alert('Machine ajoutée avec succès')
       newMachine.value = {
         title: '',
         content: '',
-        img: null
+        img: null,
+        imgPreview: null
       }
       await fetchMachines()
+    } else {
+      throw new Error(data.message || 'Échec de la requête')
     }
   } catch (error) {
     console.error('Erreur:', error)
+    alert(`Erreur: ${error.message}`)
   }
 }
 
 async function handleSubmit(machine, event) {
   event.preventDefault()
   
-  // Construire l'objet complet comme pour les blogs
-  const jsonData = {
-    type: 'machine',
-    title: machine.title,
-    content: machine.content
-  }
-
-  // Gestion spécifique de l'image
-  if (machine.img) {
-    jsonData.img = machine.img.name || machine.img
+  const formData = new FormData()
+  formData.append('type', 'machine')
+  formData.append('title', machine.title)
+  formData.append('content', machine.content)
+  if (machine.img && typeof machine.img !== 'string') {
+    formData.append('img', machine.img)
   }
 
   try {
     const response = await fetch(`${API_URL}/${machine.id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(jsonData),
+      body: formData
     })
     
     if (response.ok) {
       alert('Machine modifiée avec succès')
       await fetchMachines()
+    } else {
+      const errorData = await response.json()
+      console.error('Erreur du serveur:', errorData)
+      alert(`Erreur: ${errorData.message || 'Échec de la modification'}`)
     }
   } catch (error) {
     console.error('Erreur:', error)
+    alert('Une erreur est survenue lors de la modification')
   }
 }
 
@@ -113,9 +128,14 @@ async function handleDelete(machineId) {
       if (response.ok) {
         alert('Machine supprimée avec succès')
         await fetchMachines()
+      } else {
+        const errorData = await response.json()
+        console.error('Erreur du serveur:', errorData)
+        alert(`Erreur: ${errorData.message || 'Échec de la suppression'}`)
       }
     } catch (error) {
       console.error('Erreur:', error)
+      alert('Une erreur est survenue lors de la suppression')
     }
   }
 }
@@ -133,7 +153,11 @@ async function handleDelete(machineId) {
               <div class="row g-3">
                 <div class="col-md-4 text-center">
                   <label for="newMachineImage" class="d-block">
-                    <img src="https://via.placeholder.com/150" class="img-fluid rounded border" style="cursor: pointer;">
+                    <img 
+                      :src="newMachine.imgPreview || 'https://via.placeholder.com/150'" 
+                      class="img-fluid rounded border" 
+                      style="cursor: pointer; height: 150px; object-fit: cover;"
+                    >
                   </label>
                   <input 
                     type="file" 
@@ -141,7 +165,9 @@ async function handleDelete(machineId) {
                     id="newMachineImage" 
                     accept="image/*"
                     @change="handleNewImageUpload"
+                    required
                   >
+                  <small class="text-muted">Cliquez pour changer l'image</small>
                 </div>
                 <div class="col-md-8">
                   <div class="mb-2">
@@ -161,6 +187,7 @@ async function handleDelete(machineId) {
                       rows="3" 
                       placeholder="Ex : 5 Axes Continue 650x520x475"
                       v-model="newMachine.content"
+                      required
                     ></textarea>
                   </div>
                   <div class="text-end">
@@ -185,10 +212,9 @@ async function handleDelete(machineId) {
                   <div class="col-md-3 text-center">
                     <label :for="'machineImage' + machine.id" class="d-block cursor-pointer">
                       <img 
-                        :src="machine.img || 'https://via.placeholder.com/150'" 
-                        alt="Machine Image" 
+                        :src="machine.imgPreview || machine.img || 'https://via.placeholder.com/150'" 
                         class="img-fluid rounded border" 
-                        style="cursor: pointer;"
+                        style="cursor: pointer; height: 150px; object-fit: cover;"
                       >
                     </label>
                     <input 
@@ -198,6 +224,7 @@ async function handleDelete(machineId) {
                       accept="image/*"
                       @change="handleImageUpload(machine, $event)"
                     >
+                    <small class="text-muted">Cliquez pour changer l'image</small>
                   </div>
 
                   <!-- Inputs -->
@@ -217,6 +244,7 @@ async function handleDelete(machineId) {
                         class="form-control" 
                         rows="3"
                         v-model="machine.content"
+                        required
                       ></textarea>
                     </div>
                   </div>
@@ -250,4 +278,8 @@ async function handleDelete(machineId) {
   </main>
 </template>
 
-<style scoped></style>
+<style scoped>
+.cursor-pointer {
+  cursor: pointer;
+}
+</style>
