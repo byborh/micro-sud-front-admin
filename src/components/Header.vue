@@ -11,7 +11,7 @@ import { RouterLink } from 'vue-router'
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav">
-            <router-link class="nav-link" to="/">Block Textuel</router-link>
+            <router-link class="nav-link" to="/block-textuel">Block Textuel</router-link>
             <router-link class="nav-link" to="/machines">Machines</router-link>
             <router-link class="nav-link" to="/blogs">Blog</router-link>
             <router-link class="nav-link" to="/savoir-faire">Savoir-faire</router-link>
