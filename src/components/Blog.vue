@@ -39,37 +39,49 @@ function handleImageUpload(blog, event) {
 }
 
 async function handleNewSubmit(event) {
-  event.preventDefault()
+  event.preventDefault();
   
-  const jsonData = {
-    type: 'blog',
-    title: newBlog.value.title,
-    date: newBlog.value.date,
-    content: newBlog.value.content,
-    img: newBlog.value.img?.name || 'img'
+  // Création de l'objet FormData
+  const formData = new FormData();
+  
+  // Ajout des champs texte
+  formData.append('type', 'blog');
+  formData.append('title', newBlog.value.title);
+  formData.append('date', newBlog.value.date);
+  formData.append('content', newBlog.value.content);
+
+  console.log(newBlog);
+  
+  // Ajout du fichier image si présent
+  if (newBlog.value.img) {
+    formData.append('img', newBlog.value.img);
   }
 
   try {
     const response = await fetch(`${API_URL}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(jsonData),
-    })
+      // NE PAS mettre le header 'Content-Type' car il sera automatiquement 
+      // défini avec le boundary correct par le navigateur
+      body: formData
+    });
     
     if (response.ok) {
-      alert('Blog ajouté avec succès')
+      alert('Blog ajouté avec succès');
+      // Réinitialisation du formulaire
       newBlog.value = {
         title: '',
         date: '',
         content: '',
         img: null
-      }
-      await fetchBlogs()
+      };
+      await fetchBlogs();
+    } else {
+      const errorData = await response.json();
+      alert(`Erreur: ${errorData.message || 'Échec de la création du blog'}`);
     }
   } catch (error) {
-    console.error('Erreur:', error)
+    console.error('Erreur:', error);
+    alert('Une erreur est survenue lors de la création du blog');
   }
 }
 
