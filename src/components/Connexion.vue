@@ -79,5 +79,4 @@ export default {
 </template>
 
 <style scoped>
-/* Pas de CSS personnalisé comme demandé */
 </style>
