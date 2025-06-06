@@ -5,6 +5,7 @@ const API_URL = import.meta.env.VITE_API_URL
 
 // Données pour le nouveau savoir-faire
 const newSkill = ref({
+  type: 'savoir_faire',
   title: '',
   content: '',
   img: null
@@ -20,7 +21,7 @@ onMounted(async () => {
 
 async function fetchSkills() {
   try {
-    const response = await fetch(`${API_URL}/type/section`)
+    const response = await fetch(`${API_URL}/type/savoir_faire`)
     if (response.ok) {
       skills.value = await response.json()
     }
@@ -40,61 +41,66 @@ function handleImageUpload(skill, event) {
 async function handleNewSubmit(event) {
   event.preventDefault()
   
-  const jsonData = {
-    type: 'section',
-    title: newSkill.value.title,
-    content: newSkill.value.content,
-    img: newSkill.value.img?.name || 'img'
+  const formData = new FormData()
+  formData.append('type', 'savoir_faire')
+  formData.append('title', newSkill.value.title)
+  formData.append('content', newSkill.value.content)
+  
+  if (newSkill.value.img) {
+    formData.append('img', newSkill.value.img)
   }
+
+  console.log('newSkill', newSkill.value)
+  console.log('formData', formData)
 
   try {
     const response = await fetch(`${API_URL}`, {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(jsonData),
+      body: formData
     })
     
     if (response.ok) {
       alert('Savoir-faire ajouté avec succès')
-      newSkill.value = {
-        title: '',
-        content: '',
-        img: null
-      }
+      newSkill.value = { type: 'savoir_faire', title: '', content: '', img: null }
       await fetchSkills()
+    } else {
+      const errorData = await response.json()
+      alert(`Erreur: ${errorData.message || 'Échec de l\'ajout du savoir-faire'}`)
     }
   } catch (error) {
     console.error('Erreur:', error)
+    alert('Une erreur est survenue lors de l\'ajout du savoir-faire')
   }
 }
 
 async function handleSubmit(skill, event) {
   event.preventDefault()
   
-  const jsonData = {
-    type: 'section',
-    title: skill.title,
-    content: skill.content,
-    img: skill.img || 'img'
+  const formData = new FormData()
+  formData.append('type', 'savoir_faire')
+  formData.append('title', skill.title)
+  formData.append('content', skill.content)
+  
+  if (skill.img instanceof File) {
+    formData.append('img', skill.img)
   }
 
   try {
     const response = await fetch(`${API_URL}/${skill.id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(jsonData),
+      body: formData
     })
     
     if (response.ok) {
       alert('Savoir-faire modifié avec succès')
       await fetchSkills()
+    } else {
+      const errorData = await response.json()
+      alert(`Erreur: ${errorData.message || 'Échec de la modification'}`)
     }
   } catch (error) {
     console.error('Erreur:', error)
+    alert('Une erreur est survenue lors de la modification')
   }
 }
 
@@ -103,6 +109,9 @@ async function handleDelete(skillId) {
     try {
       const response = await fetch(`${API_URL}/${skillId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
       
       if (response.ok) {
@@ -111,6 +120,7 @@ async function handleDelete(skillId) {
       }
     } catch (error) {
       console.error('Erreur:', error)
+      alert('Une erreur est survenue lors de la suppression')
     }
   }
 }
@@ -178,7 +188,7 @@ async function handleDelete(skillId) {
                       :src="skill.img || 'https://via.placeholder.com/150'" 
                       alt="Savoir-faire" 
                       class="img-fluid rounded border" 
-                      style="cursor: pointer;"
+                      style="cursor: pointer; max-height: 150px;"
                     >
                   </label>
                   <input 
@@ -188,6 +198,7 @@ async function handleDelete(skillId) {
                     accept="image/*"
                     @change="handleImageUpload(skill, $event)"
                   >
+                  <small class="text-muted">Cliquez pour changer l'image</small>
                 </div>
 
                 <!-- Infos -->
@@ -239,4 +250,8 @@ async function handleDelete(skillId) {
   </main>
 </template>
 
-<style scoped></style>
+<style scoped>
+.cursor-pointer {
+  cursor: pointer;
+}
+</style>

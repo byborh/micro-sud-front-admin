@@ -8,6 +8,7 @@ export default {
   setup() {
     const router = useRouter()
     const connected = ref(isAuthenticated())
+    console.log('connected', !connected.value)
     
     const handleLogout = async () => {
       await logout()
@@ -43,7 +44,7 @@ export default {
         </ul>
         
         <!-- Bouton de déconnexion aligné à droite -->
-        <div class="d-flex" v-if="connected">
+        <div class="d-flex" v-if="connected.value">
           <button 
             @click="handleLogout" 
             class="btn btn-outline-danger ms-3"

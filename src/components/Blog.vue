@@ -5,8 +5,8 @@ const API_URL = import.meta.env.VITE_API_URL
 
 // Données pour le nouveau blog
 const newBlog = ref({
+  type: 'blog',
   title: '',
-  date: '',
   content: '',
   img: null
 })
@@ -41,18 +41,11 @@ function handleImageUpload(blog, event) {
 async function handleNewSubmit(event) {
   event.preventDefault();
   
-  // Création de l'objet FormData
   const formData = new FormData();
-  
-  // Ajout des champs texte
-  formData.append('type', 'blog');
+  formData.append('type', newBlog.value.type);
   formData.append('title', newBlog.value.title);
-  formData.append('date', newBlog.value.date);
   formData.append('content', newBlog.value.content);
-
-  console.log(newBlog);
   
-  // Ajout du fichier image si présent
   if (newBlog.value.img) {
     formData.append('img', newBlog.value.img);
   }
@@ -60,17 +53,16 @@ async function handleNewSubmit(event) {
   try {
     const response = await fetch(`${API_URL}`, {
       method: 'POST',
-      // NE PAS mettre le header 'Content-Type' car il sera automatiquement 
-      // défini avec le boundary correct par le navigateur
       body: formData
+      // Pas besoin de headers 'Content-Type', le navigateur le fera automatiquement avec FormData
     });
     
     if (response.ok) {
       alert('Blog ajouté avec succès');
       // Réinitialisation du formulaire
       newBlog.value = {
+        type: 'blog',
         title: '',
-        date: '',
         content: '',
         img: null
       };
@@ -88,31 +80,35 @@ async function handleNewSubmit(event) {
 async function handleSubmit(blog, event) {
   event.preventDefault()
   
-  const jsonData = {
-    type: 'blog'
+  const formData = new FormData();
+  formData.append('type', 'blog');
+  formData.append('title', blog.title);
+  formData.append('content', blog.content);
+  
+  // On envoie l'image seulement si c'est un fichier (nouvelle image uploadée)
+  if (blog.img instanceof File) {
+    formData.append('img', blog.img);
   }
 
-  if (blog.title) jsonData.title = blog.title
-  if (blog.date) jsonData.date = blog.date
-  if (blog.content) jsonData.content = blog.content
-  if (blog.img) jsonData.img = blog.img.name
-  else if (blog.img) jsonData.img = blog.img
+  console.log('blog', blog)
+  console.log('formData', formData)
 
   try {
     const response = await fetch(`${API_URL}/${blog.id}`, {
       method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(jsonData),
+      body: formData
     })
     
     if (response.ok) {
       alert('Blog modifié avec succès')
       await fetchBlogs()
+    } else {
+      const errorData = await response.json();
+      alert(`Erreur: ${errorData.message || 'Échec de la modification du blog'}`);
     }
   } catch (error) {
     console.error('Erreur:', error)
+    alert('Une erreur est survenue lors de la modification du blog');
   }
 }
 
@@ -121,6 +117,9 @@ async function handleDelete(blogId) {
     try {
       const response = await fetch(`${API_URL}/${blogId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
       
       if (response.ok) {
@@ -143,22 +142,13 @@ async function handleDelete(blogId) {
           <h4 class="mb-4"><i class="bi bi-journal-plus me-2"></i>Créer un nouveau blog</h4>
           <form @submit="handleNewSubmit" enctype="multipart/form-data">
             <div class="row g-3">
-              <div class="col-md-6">
+              <div class="col-md-12">
                 <label class="form-label">Titre</label>
                 <input 
                   type="text" 
                   class="form-control" 
                   placeholder="Titre du blog"
                   v-model="newBlog.title"
-                  required
-                >
-              </div>
-              <div class="col-md-6">
-                <label class="form-label">Date</label>
-                <input 
-                  type="date" 
-                  class="form-control"
-                  v-model="newBlog.date"
                   required
                 >
               </div>
@@ -225,15 +215,6 @@ async function handleDelete(blogId) {
                       type="text" 
                       class="form-control" 
                       v-model="blog.title"
-                      required
-                    >
-                  </div>
-                  <div class="mb-2">
-                    <label class="form-label">Date</label>
-                    <input 
-                      type="date" 
-                      class="form-control" 
-                      v-model="blog.date"
                       required
                     >
                   </div>

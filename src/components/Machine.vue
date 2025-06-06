@@ -7,7 +7,8 @@ const API_URL = import.meta.env.VITE_API_URL
 const newMachine = ref({
   title: '',
   content: '',
-  img: null
+  img: null,
+  imgPreview: null
 })
 
 // Liste des machines existantes
@@ -15,14 +16,20 @@ const machines = ref([])
 
 // Chargement des machines au montage du composant
 onMounted(async () => {
+  console.log('Composant monté, chargement des machines...')
   await fetchMachines()
 })
 
 async function fetchMachines() {
+  console.log('Début de fetchMachines')
   try {
     const response = await fetch(`${API_URL}/type/machine`)
+    console.log('Réponse reçue:', response)
     if (response.ok) {
       machines.value = await response.json()
+      console.log('Machines chargées:', machines.value)
+    } else {
+      console.error('Erreur dans la réponse:', response.status)
     }
   } catch (error) {
     console.error('Erreur lors du chargement des machines:', error)
@@ -30,46 +37,55 @@ async function fetchMachines() {
 }
 
 function handleNewImageUpload(event) {
+  console.log('Nouvelle image sélectionnée', event.target.files)
   const file = event.target.files[0];
   if (file) {
     newMachine.value.img = file;
-    // Mise à jour immédiate de l'aperçu
     newMachine.value.imgPreview = URL.createObjectURL(file);
+    console.log('Nouvelle image configurée:', newMachine.value.img)
   }
 }
 
 function handleImageUpload(machine, event) {
+  console.log('Image modifiée pour machine', machine.id, event.target.files)
   const file = event.target.files[0];
   if (file) {
     machine.img = file;
-    // Mise à jour immédiate de l'aperçu
     machine.imgPreview = URL.createObjectURL(file);
+    console.log('Image modifiée configurée:', machine.img)
   }
 }
 
 async function handleNewSubmit(event) {
   event.preventDefault()
+  console.log('Soumission nouvelle machine', newMachine.value)
   
   const formData = new FormData()
   formData.append('type', 'machine')
   formData.append('title', newMachine.value.title)
   formData.append('content', newMachine.value.content)
+  
+  // Debug: Afficher le contenu de FormData
+  for (let [key, value] of formData.entries()) {
+    console.log(`${key}:`, value)
+  }
+
   if (newMachine.value.img) {
     formData.append('img', newMachine.value.img)
+    console.log('Image ajoutée à FormData:', newMachine.value.img)
   }
 
   try {
+    console.log('Envoi requête POST à:', API_URL)
     const response = await fetch(`${API_URL}`, {
       method: 'POST',
-      body: formData,
-      headers: {
-        'Accept': 'application/json' // Important pour la réponse
-      }
+      body: formData
     })
     
-    const data = await response.json()
-    
+    console.log('Réponse reçue:', response)
     if (response.ok) {
+      const responseData = await response.json()
+      console.log('Réponse complète:', responseData)
       alert('Machine ajoutée avec succès')
       newMachine.value = {
         title: '',
@@ -79,37 +95,51 @@ async function handleNewSubmit(event) {
       }
       await fetchMachines()
     } else {
-      throw new Error(data.message || 'Échec de la requête')
+      const errorData = await response.json()
+      console.error('Erreur serveur:', errorData)
+      alert(`Erreur: ${errorData.message || 'Échec de l\'ajout de la machine'}`)
     }
   } catch (error) {
     console.error('Erreur:', error)
-    alert(`Erreur: ${error.message}`)
+    alert('Une erreur est survenue lors de l\'ajout de la machine')
   }
 }
 
 async function handleSubmit(machine, event) {
   event.preventDefault()
+  console.log('Soumission modification machine', machine)
   
   const formData = new FormData()
   formData.append('type', 'machine')
   formData.append('title', machine.title)
   formData.append('content', machine.content)
-  if (machine.img && typeof machine.img !== 'string') {
+  
+  // Debug: Afficher le contenu de FormData
+  for (let [key, value] of formData.entries()) {
+    console.log(`${key}:`, value)
+  }
+
+  if (machine.img instanceof File) {
     formData.append('img', machine.img)
+    console.log('Image ajoutée à FormData:', machine.img)
   }
 
   try {
+    console.log('Envoi requête PATCH à:', `${API_URL}/${machine.id}`)
     const response = await fetch(`${API_URL}/${machine.id}`, {
       method: 'PATCH',
       body: formData
     })
     
+    console.log('Réponse reçue:', response)
     if (response.ok) {
+      const responseData = await response.json()
+      console.log('Réponse complète:', responseData)
       alert('Machine modifiée avec succès')
       await fetchMachines()
     } else {
       const errorData = await response.json()
-      console.error('Erreur du serveur:', errorData)
+      console.error('Erreur serveur:', errorData)
       alert(`Erreur: ${errorData.message || 'Échec de la modification'}`)
     }
   } catch (error) {
@@ -119,19 +149,20 @@ async function handleSubmit(machine, event) {
 }
 
 async function handleDelete(machineId) {
+  console.log('Tentative de suppression machine', machineId)
   if (confirm('Êtes-vous sûr de vouloir supprimer cette machine ?')) {
     try {
       const response = await fetch(`${API_URL}/${machineId}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json'
+        }
       })
       
+      console.log('Réponse suppression:', response)
       if (response.ok) {
         alert('Machine supprimée avec succès')
         await fetchMachines()
-      } else {
-        const errorData = await response.json()
-        console.error('Erreur du serveur:', errorData)
-        alert(`Erreur: ${errorData.message || 'Échec de la suppression'}`)
       }
     } catch (error) {
       console.error('Erreur:', error)
@@ -142,6 +173,7 @@ async function handleDelete(machineId) {
 </script>
 
 <template>
+  <!-- Le template reste inchangé -->
   <main class="container mt-5">
       <div class="row justify-content-center">
         <div class="col-lg-10">
@@ -270,9 +302,7 @@ async function handleDelete(machineId) {
             <div v-if="machines.length === 0" class="alert alert-info">
               Aucune machine disponible. Ajoutez-en une avec le formulaire ci-dessus.
             </div>
-
           </section>
-
         </div>
       </div>
   </main>
